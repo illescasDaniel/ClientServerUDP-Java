@@ -12,7 +12,7 @@ import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
 
-public class ClientServer {
+class ClientServer {
 
 	// GUI elements
 	private JPanel panel;
@@ -46,7 +46,7 @@ public class ClientServer {
 
 	private ClientServer() {
 
-		// Consigue la IP local para mostrarla en una etiqueta
+		// Get local IP to display it on a label
 		try {
 			String myLocalIP = InetAddress.getLocalHost().getHostAddress();
 			localIPLabel.setText("IP: " + myLocalIP);
@@ -55,20 +55,20 @@ public class ClientServer {
 			localIPLabel.setText("IP: " + "unknown");
 		}
 
-		// Lanza el servidor al hacer click en el botón de "start connection"
+		// Run the server
 		startConnectionButton.addActionListener(e -> {
 
-			// Si los campos de IP o puerto están vacíos muestra alerta
+			// If the IP or port fields are empty, show an alert
 			if (serverIPTextField.getText().isEmpty() || serverPortTextField.getText().isEmpty()) {
 				JOptionPane.showMessageDialog(null, "Fill the empty fields", "Error", JOptionPane.ERROR_MESSAGE);
 			} else if (!connectionStarted) {
 
-				// Recoge los valores de los campos e introdúcelos en variables
+				// Take the text inside the fields and save it into variables
 				messageSizeLimit = Integer.valueOf(messageSizeTextField.getText());
 				port = Integer.valueOf(serverPortTextField.getText());
 				serverIP = serverIPTextField.getText();
 
-				// Crea una nuevo datagramSocket para el servidor
+				// Create a new datagramSocket for the server
 				try {
 					serverSocket = new DatagramSocket(port);
 				} catch (SocketException exception) {
@@ -77,25 +77,24 @@ public class ClientServer {
 
 				connectionStarted = true;
 
-				// Cambia la etiqueta del estado de conexión
+				// Change the text of the connection status label
 				connectionStatus.setText("Connected");
 				connectionStatus.setForeground(new Color(20, 190, 20)); // Verde oscuro
 
-				// Llama a la función principal para recibir los packets
-				receivedPackets();
+				receivePackets();
 			} else {
 				JOptionPane.showMessageDialog(null, "End the current connection before", "Error", JOptionPane.ERROR_MESSAGE);
 			}
 		});
 
-		// Termina la conexión al hacer click en el botón "End Connection"
+		// End connection
 		endConnectionButton.addActionListener(e -> {
 
 			if (!connectionStarted) {
 				JOptionPane.showMessageDialog(null, "Connection didn't start", "Error", JOptionPane.ERROR_MESSAGE);
 			} else {
 
-				// Envía mensaje de dexconexión
+				// Send disconnection message
 				String localIP;
 				try {
 					localIP = InetAddress.getLocalHost().getHostAddress();
@@ -105,7 +104,7 @@ public class ClientServer {
 				}
 				sendPackets("SERVER: " + localIP + " ended connection");
 
-				// Cierra cliente y servidor
+				// Close client and server
 				if (clientSocket != null && !clientSocket.isClosed()) {
 					clientSocket.close();
 				}
@@ -119,14 +118,13 @@ public class ClientServer {
 				connectionStatus.setText("Disconnected");
 				connectionStatus.setForeground(new Color(220, 50, 50)); // Rojo oscuro
 
-				// Al cerrar el socket crea una excepción (que es capturada), y luego sale del programa
-				// Por ello no hace falta hacer ningún join
+				// When the socket is closed, an exception is thrown and captured, then it exits the program; hence there is no need to call "join"
 
 				JOptionPane.showMessageDialog(null, "Connection closed", "Warning", JOptionPane.WARNING_MESSAGE);
 			}
 		});
 
-		// Envía el mensaje que está en el campo de texto
+		// Send the content of the message text field
 		sendButton.addActionListener(e -> {
 
 			String textToSend = clientMessagesTextArea.getText();
@@ -197,7 +195,7 @@ public class ClientServer {
 		clpbrd.setContents(stringSelection, null);
 	}
 
-	// Constructor para la versión sin interfaz gráfica
+	// Constructor for the no GUI version
 	private ClientServer(String serverIP, int port, int messageSizeLimit, boolean GUImode, boolean connectionStarted) {
 		this.serverIP = serverIP;
 		this.port = port;
@@ -206,7 +204,7 @@ public class ClientServer {
 		this.connectionStarted = connectionStarted;
 	}
 
-	// Envía un mensaje
+	// Send a message
 	private void sendPackets(String textToSend) {
 
 		try {
@@ -219,14 +217,13 @@ public class ClientServer {
 				input = textToSend.substring(0, this.messageSizeLimit);
 			}
 
-			// Actualiza el área de texto con lo que el cliente haya escrito
+			// Update the server message text
 			boolean isEmpty = serverMessagesTextArea.getText().isEmpty();
 			serverMessagesTextArea.append(isEmpty ? input : ("\n" + input));
 
-			// Crea paquete y con datos los datos necesarios
+			// Create a new packet with the necessary data
 			DatagramPacket packet = new DatagramPacket(input.getBytes(), input.getBytes().length, IPaddress, this.port);
 
-			// Envía el paquete a traves del socket
 			clientSocket.send(packet);
 
 			if (!GUImode && textToSend.equals("\\end")) {
@@ -243,13 +240,13 @@ public class ClientServer {
 		}
 	}
 
-	// Recibe datos y actualiza el campo de texto (o la consola)
-	private void receivedPackets() {
+	// Receive the data and update the text field (or console)
+	private void receivePackets() {
 
 		new Thread(() -> {
 
 			try {
-				// Contínuamente recibe datos mientras no esté el socket cerrado
+				// Keep receiving data while the server is running
 				while (!serverSocket.isClosed()) {
 
 					if (connectionStarted) {
@@ -258,31 +255,29 @@ public class ClientServer {
 						String outputText;
 						byte[] message = new byte[messageSizeLimit];
 
-						// Crea recursos para atender una nueva conexión (crea un nuevo paquete)
+						// Create a new packet
 						DatagramPacket receivedPacket = new DatagramPacket(message, message.length);
 
-						// Escucha del socket y cuando recibo datos los almacena
+						// Receive and store the data
 						serverSocket.receive(receivedPacket);
 
-						// Lee información desde el paquete
+						// Read the information
 						int receivedPacketPort = receivedPacket.getPort();
 						InetAddress IP = receivedPacket.getAddress();
 
-						// Pasa de bytes a String con codificación UTF-8 y quita los caracteres "\0" que haya
+						// Convert bytes to a String with UTF-8 coding, also remove the "\0" characters
 						dataOutput = new String(receivedPacket.getData(), "UTF-8");
 						dataOutput = dataOutput.replaceAll("\0", "");
 
-						// Si la casilla de modo debug (depuración) está activada, muestra más datos de la conexión
 						if (debugModeCheckBox.isSelected()) {
 							outputText = "- " + dataOutput + " (IP: " + IP.getHostAddress() + ", port: " + receivedPacketPort + ")";
 						} else {
 							outputText = "- " + dataOutput;
 						}
 
-						// Si está en modo sin interfaz
 						if (!GUImode) {
 
-							// Si no se ha enviado la palabra clave "\end" para terminar conexión
+							// If the word "\end" hasn't been sent yet...
 							if (!dataOutput.equals("\\end")) {
 
 								if (debugModeEnabled) {
@@ -290,7 +285,7 @@ public class ClientServer {
 								} else {
 									System.out.println("- " + dataOutput);
 								}
-							} else { // Cierra todas las conexiones y sale del programa
+							} else { // Close all sockets and exit the program
 								System.out.println("User " + IP.getHostAddress() + " ended connection");
 								clientSocket.close();
 								serverSocket.close();
@@ -299,7 +294,7 @@ public class ClientServer {
 							outputText = "SERVER: " + IP.getHostAddress() + " ended connection";
 						}
 
-						// Añade texto nuevo a la caja de texto
+						// Add new text to the textbox
 						boolean isEmpty = serverMessagesTextArea.getText().isEmpty();
 						serverMessagesTextArea.append(isEmpty ? outputText : ("\n" + outputText));
 					}
@@ -321,16 +316,16 @@ public class ClientServer {
 		}).start();
 	}
 
-	// Función para usar el programa sin interfaz gráfica
+	// Function to use the program without GUI
 	private static void noGUI(String[] args) {
 
-		// Valores por defecto
+		// Default values
 		String serverIP = "127.0.0.1";
 		int messageSizeLimit = 128; // bytes
 		int port = 10000;
 		boolean serverAllowed = true;
 
-		// Para cada argumento comprueba si se pasa un dato y actualiza los valores por defecto
+		// For each argument, check if a certain argument is passed and get the corresponding value
 		for (String argument : args) {
 
 			int index = Arrays.asList(args).indexOf(argument);
@@ -342,14 +337,14 @@ public class ClientServer {
 			}
 		}
 
-		// Crea un cliente servidor con los datos apropiados
+		// Create a new server
 		ClientServer clientServerProgram = new ClientServer(serverIP, port, messageSizeLimit, false, true);
 
 		if (Arrays.asList(args).contains("--debug")) {
 			clientServerProgram.debugModeEnabled = true;
 		}
 
-		// Se inicializan los sockets de cliente y servidor
+		// Start client and server sockets
 		try { clientServerProgram.clientSocket = new DatagramSocket(); }
 		catch (Exception exception) { System.out.println(exception.getMessage()); }
 
@@ -364,11 +359,11 @@ public class ClientServer {
 			}
 			System.out.println("Listening...\n");
 
-			// Crea internamente un hilo para recibir mensajes (Servidor)
-			clientServerProgram.receivedPackets();
+			// Create a thread internally to receive packets
+			clientServerProgram.receivePackets();
 		}
 
-		// Crea un hilo para enviar mensajes (Cliente) mientras que el socket esté abierto
+		// Create a thread to send messages while the socket isn't closed
 		Thread client = new Thread(() -> {
 
 			Scanner input = new Scanner(System.in);
@@ -392,13 +387,10 @@ public class ClientServer {
 
 		if (args.length > 0) {
 
-			// Muestra ayuda sobre la ejecución del programa por consola
 			if (Arrays.asList(args).contains("--help")) {
 				System.out.println("Arguments (no GUI): --noGUI, --client, --debug, -ip, -size, -port");
 				System.out.println("Example: --noGUI -ip 127.0.0.1 -port 10000");
 			}
-
-			// Si como argumento se le pasa "--noGUI" se ejecuta el programa sin interfaz
 			if (Arrays.asList(args).contains("--noGUI")) {
 				ClientServer.noGUI(args);
 			}
