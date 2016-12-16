@@ -1,4 +1,4 @@
-package com.company.Practica2FR;
+package com.company.ClientServer;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
