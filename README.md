@@ -21,4 +21,5 @@ How to run
         * `-ip <ip address>`: specify the sever IP
         * `-port <port number>`: connection port
         * `-size`: message length
+4. Send `\end` to end the connection.
         
