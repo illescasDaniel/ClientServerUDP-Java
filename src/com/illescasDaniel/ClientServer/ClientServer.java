@@ -1,4 +1,4 @@
-package com.company.ClientServer;
+package com.illescasDaniel.ClientServer;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -7,7 +7,10 @@ import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
-import java.awt.event.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
