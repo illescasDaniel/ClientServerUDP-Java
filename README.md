@@ -7,8 +7,8 @@ UDP java client-server with GUI. The project was made using [IntelliJ IDEA](http
 
 Screenshots
 ----
-![Screenshot](images/Screenshot.png)
-![no GUI screnshot](images/no%20GUI%20screenshot.png)
+<img src="images/Screenshot.png" width="700">
+<img src="images/no%20GUI%20screenshot.png" width="700">
 
 How to run
 ----
